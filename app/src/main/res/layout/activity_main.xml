@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    tools:context="arab_open_university.com.bustracker.MainActivity">
+
+    <FrameLayout
+        android:id="@+id/map_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/map_widget_background"
+        android:layout_margin="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:text="المحطة التالية:"
+            android:id="@+id/map_lbl_next_station"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/map_lbl_next_station"
+            android:layout_marginEnd="5dp"
+            android:layout_marginRight="5dp"
+            android:text="غمرة"
+            android:id="@+id/map_next_station"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="5dp"
+            android:layout_below="@id/map_lbl_next_station"
+            android:text="الوقت المتوقع للوصل للمحطة:"
+            android:id="@+id/map_lbl_estimated_time"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/map_next_station"
+            android:layout_toLeftOf="@id/map_lbl_estimated_time"
+            android:layout_marginRight="5dp"
+            android:layout_marginEnd="5dp"
+            android:layout_marginTop="5dp"
+            android:text="١٠ دقائق"
+            android:id="@+id/map_estimated_time"/>
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="5dp"
+            android:layout_below="@id/map_lbl_estimated_time"
+            android:text="المحطات:"
+            android:id="@+id/map_lbl_stations"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/map_estimated_time"
+            android:layout_toLeftOf="@id/map_lbl_stations"
+            android:layout_marginRight="5dp"
+            android:layout_marginEnd="5dp"
+            android:layout_marginTop="5dp"
+            android:text="عبدالمنعم رياض - رمسيس - غمرة - العباسية"
+            android:id="@+id/map_stations"/>
+
+        </RelativeLayout>
+
+
+</RelativeLayout>

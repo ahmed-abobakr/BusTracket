@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Bus Tracker</string>
+    <string name="plate_num">Plate Number</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="google_maps_key">AIzaSyCmUgbZDs5h5bxj06phijxH3LnkGXEV8t8</string>
+</resources>
