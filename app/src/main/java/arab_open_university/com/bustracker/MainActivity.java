@@ -18,6 +18,11 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -55,16 +60,17 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ResultCallback<Status>, LocationListener,
-                GeofenceListener{
+                GeofenceListener, StartTipDialog.OnStartedStationChoosen{
 
     GoogleMap mMap;
     GoogleApiClient googleApiClient;
 
-    boolean isMapReady = false;
+    boolean isMapReady = false, isTripStarted = false;
 
     private final LatLng AkherElShare3 = new LatLng(29.959203, 31.106928);
     private final LatLng ElGame3 = new LatLng(29.960346, 31.107336);
@@ -102,15 +108,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private BusStation currentBusStations;
 
     //views
-    private TextView txtStations;
+    private TextView txtStations, txtLblStation, txtStationName;
+    private Button btnTripStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Inflate the layout views
         txtStations = (TextView) findViewById(R.id.map_stations);
+        txtLblStation = (TextView) findViewById(R.id.map_lbl_next_station);
+        txtStationName = (TextView) findViewById(R.id.map_next_station);
+        btnTripStatus = (Button) findViewById(R.id.btn_start_trip);
 
+        /* shows map fragment in the activity and asunc download the maps on the activity */
         final MapFragment mapFragment = new MapFragment();
         FragmentTransaction fragmentTransaction =
                 getFragmentManager().beginTransaction().replace(R.id.map_view, mapFragment);
@@ -118,86 +130,66 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapFragment.getMapAsync(this);
 
         BusTrackerApp.listener = this;
+        BusTrackerApp.onStartedStationChoosen = this;
 
         busStationsList = new ArrayList<>();
         geofenceList = new ArrayList<>();
-        /*geofenceList.add(startLocation);
-        geofenceList.add(AkherElShare3);
-        geofenceList.add(ElGame3);
-        geofenceList.add(ElGate2);
-        geofenceList.add(ElGate1);
-        geofenceList.add(elRemaya);
-        geofenceList.add(mashaalLatLng);
-        geofenceList.add(mariotiaLatLng);
-        geofenceList.add(areishLatLng);
-        geofenceList.add(carioMallLatLng);
-        geofenceList.add(talbiaLatLng);
-        geofenceList.add(gizaSquareLatLng);*/
 
-        myLocationChangedList = new ArrayList<>();
-        myLocationChangedList.add(startLocation);
-        myLocationChangedList.add(beforeMashaalLocation);
-        myLocationChangedList.add(mashaalLatLng);
-        myLocationChangedList.add(afterMashaalLocation);
-        myLocationChangedList.add(beforeMariotiaaLocation);
-        myLocationChangedList.add(mariotiaLatLng);
-        myLocationChangedList.add(afterMariotiaaLocation);
-        myLocationChangedList.add(beforeArieshLocation);
-        myLocationChangedList.add(areishLatLng);
-        myLocationChangedList.add(afterArieshLocation);
-        myLocationChangedList.add(beforeCairoMallLocation);
-        myLocationChangedList.add(carioMallLatLng);
-        myLocationChangedList.add(afterCairoMallLocation);
-        myLocationChangedList.add(beforeTalbiaaLocation);
-        myLocationChangedList.add(talbiaLatLng);
-        myLocationChangedList.add(afterTalbiaaLocation);
-        myLocationChangedList.add(beforeGizaSquareLocation);
-        myLocationChangedList.add(gizaSquareLatLng);
-
+        //Intialize firebase database
         database = FirebaseDatabase.getInstance();
-        DatabaseReference busStationsReference = database.getReference("buses_Info");
 
-            busStationsReference.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    FirebaseAuth auth = FirebaseAuth.getInstance();
-                    FirebaseUser user = auth.getCurrentUser();
-                    String stationsNames = "";
-                    for(DataSnapshot snapshot : dataSnapshot.getChildren()){
-                        BusStation busStation = snapshot.getValue(BusStation.class);
-                        for(String id : busStation.getBusesIDs()){
-                            if(id.equalsIgnoreCase(user.getUid())) {
-                                currentBusStations = busStation;
-                                for(String busName : busStation.getBusStationsNames()){
-                                    stationsNames += busName + " - ";
-                                }
-                                for(int i = 0; i < busStation.getBusStationsLat().size(); i++){
-                                    geofenceList.add(new LatLng(busStation.getBusStationsLat().get(i), busStation.getBusStationsLong().get(i)));
-                                }
-                                continue;
-                            }
-                        }
+
+        /* shows dialog to determine the start trip  */
+        btnTripStatus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(btnTripStatus.getText().toString().equals(getString(R.string.start_trip))) {
+                    btnTripStatus.setText(getString(R.string.end_trip));
+                    if (currentBusStations != null && currentBusStations.getBusStationsNames() != null && currentBusStations.getBusStationsNames().size() > 1) {
+                        Bundle args = new Bundle();
+                        args.putStringArrayList("stations_list", ((ArrayList<String>) currentBusStations.getBusStationsNames()));
+                        StartTipDialog dialog = new StartTipDialog();
+                        dialog.setArguments(args);
+                        dialog.show(getFragmentManager(), "start stations");
                     }
-                    txtStations.setText(stationsNames);
-                    Log.d("TEST", "BusNUMOfStations: " + currentBusStations.getNumOfBusStations());
-                    showMarkersAndZoom();
-                    setBusStationsList();
+                }else {
+                    btnTripStatus.setText(getString(R.string.start_trip));
                 }
+            }
+        });
 
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    Log.d("TEST", "Read Canceled");
-                }
-            });
 
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate Menu layout
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            //when ues click logout from menu
+            case R.id.logout:
+                MainActivity.this.finish();
+                return true;
+        }
+
+        return false;
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        Log.d("TEST", "request permission Result");
+        //CallBack after user accept or reject permissions worked for android 6.0 and upper only
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch ( requestCode ) {
             case 101: {
+                /* check if user accepts Location permission  if yes set my location enabled true and request
+                 * location from google services */
                 if ( grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED ){
                     // Permission granted
@@ -227,14 +219,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Log.d("TEST", "OnConnected");
-       // mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(myLocationChangedList.get(myLocationChangeListIndex), 16), 200, null);
-
-
+        /* called after connected to google location services and request  location updates every 6.0 seconds
+         * and get last konown location and show bus marker and zoom to bus location
+          * and check if user enable location or not if not enabled request from user to enable location
+           * and add bus stations to geofence */
         if(isPermissionsGranted(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION})) {
-            /*if(LocationServices.FusedLocationApi.getLastLocation(googleApiClient) != null)
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(LocationServices.FusedLocationApi.getLastLocation(googleApiClient).getLatitude(), LocationServices.FusedLocationApi.getLastLocation(googleApiClient).getLongitude()), 16), 200, null);*/
-
             showMarkersAndZoom();
 
 
@@ -249,23 +238,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 ).setResultCallback(this);
             }
 
-           // startCountDownTimer();
-            /*    Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        onLocationChanged(new Location(LocationManager.GPS_PROVIDER));
-                    }
-                }, 3000);*/
-            /*Timer timer = new Timer();
-            timer.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    runOnUiThread(new Runnable() {
-
-                    });
-                }
-            },0, 3000);*/
         }else {
             requestGrantedPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 101);
         }
@@ -283,6 +255,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        /* called after downloading map  and drawing it on the activity
+         * check if user accept location permission on android 6.0 and heigher
+          * if no request permission
+          * if yes allow my location on map and show button my location on google map and connect to google location services  */
         isMapReady = true;
         mMap = googleMap;
         if(isPermissionsGranted(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION})) {
@@ -302,193 +278,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void  setBusStationsList(){
-        Log.d("TEST", "SETBusStationsList");
+        /* add bus stations list to geofence by determining the diameter of the station  */
         for(LatLng latLng : geofenceList) {
             String id = UUID.randomUUID().toString();
             busStationsList.add(new Geofence.Builder()
                     .setRequestId(String.valueOf(geofenceList.indexOf(latLng)))
                     .setCircularRegion(latLng.latitude, latLng.longitude,
-                            60.0f)
+                            200.0f)
                     .setExpirationDuration(Geofence.NEVER_EXPIRE)
                     .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
                             Geofence.GEOFENCE_TRANSITION_EXIT)
                     .build());
         }
-        if(googleApiClient.isConnected()) {
-            LocationServices.GeofencingApi.addGeofences(
-                    googleApiClient,
-                    busStationsList,
-                    getGeofencePendingIntent()
-            ).setResultCallback(this);
-        }
-        //StartLocation
-        /*busStationsList.add(new Geofence.Builder()
-                .setRequestId("1")
-                .setCircularRegion(startLocation.latitude,
-                        startLocation.longitude,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //Akher-Elshare3
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("2")
-                .setCircularRegion(AkherElShare3.latitude,
-                        AkherElShare3.longitude,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //El-Game3
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("3")
-                .setCircularRegion(ElGame3.latitude,
-                        ElGame3.longitude,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //El-Gate2
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("4")
-                .setCircularRegion(ElGate2.latitude,
-                        ElGate2.longitude,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //El-Gate1
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("5")
-                .setCircularRegion(ElGate1.latitude,
-                        ElGate1.longitude,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //El-Remaya
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("6")
-                .setCircularRegion(elRemaya.latitude,
-                        elRemaya.longitude,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
 
 
-        //Mashaal
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("7")
-                .setCircularRegion(29.986782,
-                        31.141370,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //Mariotia
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("8")
-                .setCircularRegion(29.989988,
-                        31.150007,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //Areish
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("9")
-                .setCircularRegion(29.993816,
-                        31.160403,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //Cairo Mall
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("10")
-                .setCircularRegion(29.998824,
-                        31.173492,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //Talbia
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("11")
-                .setCircularRegion(30.001732,
-                        31.181195,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        //Giza Square
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("12")
-                .setCircularRegion(30.015417,
-                        31.212062,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());*/
-
-
-        /*busStationsList.add(new Geofence.Builder()
-                .setRequestId("11")
-                .setCircularRegion(29.992775, 31.157512,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("12")
-                .setCircularRegion(29.993853, 31.160677,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());
-
-        busStationsList.add(new Geofence.Builder()
-                .setRequestId("13")
-                .setCircularRegion(29.995135, 31.163810,
-                        60.0f)
-                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                        Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build());*/
     }
 
-    private GeofencingRequest getGeofenceRequest(){
-        GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
-        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
-        builder.addGeofences(busStationsList);
-        return builder.build();
-    }
+
 
     private PendingIntent getGeofencePendingIntent(){
         if(mGeofencePendingIntent != null){
@@ -503,47 +309,67 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.d("TEST", "OnResult");
         if(status.isSuccess() ){
             Log.d("TEST", "onResultSuccess");
-
-            if(geofenceListIndex < geofenceList.size()) {
-                //setBusStationsList(geofenceList.get(geofenceListIndex).latitude, geofenceList.get(geofenceListIndex).longitude);
-
-
-
             }
         }
-    }
+
 
     private void  showMarkersAndZoom(){
-        Log.d("TEST", "ShowMarkers and zoom");
+        /* the method is called to show bus location marker and zoom to bus location
+        * and adding bus stations markers*/
         mMap.clear();
         if(mLastLocation != null) {
-            mMap.addMarker(new MarkerOptions().position(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude())).icon(BitmapDescriptorFactory.fromResource(R.drawable.shuttle)));
+            mMap.addMarker(new MarkerOptions().position(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude())).icon(BitmapDescriptorFactory.fromResource(R.drawable.busmarker)));
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 16), 200, null);
         }
         for(int i = 0; i < geofenceList.size(); i++) {
             mMap.addMarker(new MarkerOptions().position(geofenceList.get(i)).icon(BitmapDescriptorFactory.fromResource(R.drawable.bus_stop24)));
         }
 
-        /*LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        builder.include(myLocationChangedList.get(myLocationChangeListIndex));
-        builder.include(geofenceList.get(geofenceListIndex));
-
-
-        LatLngBounds bounds = builder.build();
-        int padding = 50;
-        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);*/
-
     }
 
     private void startLocationUpdates(){
+        /*  called to start request location  updateds every 30 seconds and
+          check if user enable location
+        * send the location to the firebase database*/
         LocationRequest locationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setFastestInterval(3000)
                 .setInterval(3000);
         LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
-        if(mLastLocation != null)
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 16), 200, null);
+        if(mLastLocation != null) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 16), 200, null);
+        }
+        DatabaseReference busStationsReference = database.getReference("buses_Info");
+
+        busStationsReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                FirebaseAuth auth = FirebaseAuth.getInstance();
+                FirebaseUser user = auth.getCurrentUser();
+
+                outerloop:
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                    BusStation busStation = snapshot.getValue(BusStation.class);
+                    for(String id : busStation.getBusesIDs()){
+                        if(id.equalsIgnoreCase(user.getUid())) {
+                          btnTripStatus.setVisibility(View.VISIBLE);
+                            currentBusStations = busStation;
+
+                            break outerloop;
+                        }
+                    }
+                }
+
+                Log.d("TEST", "BusNUMOfStations: " + currentBusStations.getNumOfBusStations());
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d("TEST", "Read Canceled");
+            }
+        });
         LocationSettingsRequest.Builder mBuilder = new LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest);
 
@@ -584,25 +410,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    /*private boolean checkPermission() {
-        Log.d("TEST", "checkPermission()");
-        // Ask for permission if it wasn't granted yet
-        return (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED );
-    }
-
-    // Asks for permission
-    private void askPermission() {
-
-        ActivityCompat.requestPermissions(
-                this,
-                new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
-                101
-        );
-    }*/
 
     public  boolean isPermissionsGranted(Context context, String[] grantPermissions) {
-        Log.d("TEST", "checkPermission()");
+        /* this method is called to check if user grant specific permissions for android 6.0 and heigher  */
         boolean accessGranted = true;
         if (grantPermissions == null || grantPermissions.length == 0) {
             accessGranted = false;
@@ -619,7 +429,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public  boolean requestGrantedPermissions(Context context, String[] permissions, int requestCode) {
-        Log.d("TEST", "askPermission()");
+        /* the method request permission on android 6.0 and heigher */
         boolean requestPermission = true;
         if (!isPermissionsGranted(context, permissions)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -636,7 +446,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onLocationChanged(final Location location) {
-        Log.d("TEST", "onLocationChanged");
+        /* called after location changed and send the changed location to the firebase database */
         mLastLocation = location;
         if(location != null){
             FirebaseAuth mAuth = FirebaseAuth.getInstance();
@@ -656,16 +466,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 });
             }
         }
-        /*Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
 
-            }
-        }, 3000);*/
-        /*location.setLatitude(myLocationChangedList.get(myLocationChangeListIndex).latitude);
-        location.setLongitude(myLocationChangedList.get(myLocationChangeListIndex).longitude);*/
-        //geofenceListIndex++;
         showMarkersAndZoom();
         myLocationChangeListIndex++;
         if(counter == 2){
@@ -674,24 +475,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }else {
             counter++;
         }
-        //startCountDownTimer();
+
     }
 
-   /* private void startCountDownTimer(){
-        CountDownTimer requestTimer = new CountDownTimer(3000, 1000L) {
-            @Override
-            public void onTick(long l) {
-
-            }
-
-            @Override
-            public void onFinish() {
-                Log.d("Test", "CountDownTimer Finished");
-                onLocationChanged(new Location(LocationManager.GPS_PROVIDER));
-            }
-        };
-        requestTimer.start();
-    }*/
 
     public  static Intent makeNotificationIntent(Context geofenceService, String msg)
     {
@@ -700,12 +486,63 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void onGeoLocationEntered(int index) {
-
+    public void onGeoLocationEntered(final int index) {
+        /* called when the bus enter the station */
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                txtLblStation.setText("Current Station: ");
+                txtStationName.setText(currentBusStations.getBusStationsNames().get(index));
+            }
+        });
     }
 
     @Override
     public void onGeoLocationExited(int index) {
+        /* called when the bus exit the station */
+        index++;
+        final  int indexTemp = index;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                //index++;
+                Toast.makeText(MainActivity.this, "indexTemp = " + indexTemp, Toast.LENGTH_LONG).show();
+                if(currentBusStations.getBusStationsNames().size() < indexTemp){
+                    txtLblStation.setText("NextStation: ");
+                    txtStationName.setText(currentBusStations.getBusStationsNames().get(0));
+                }else {
+                    txtLblStation.setText("Next Station: ");
+                    txtStationName.setText(currentBusStations.getBusStationsNames().get(indexTemp));
+                }
 
+            }
+        });
     }
+
+    @Override
+    public void onStartedStationChoosen(boolean reverseList) {
+        /* called when the driver choose the started station  */
+        if(reverseList){
+            Collections.reverse(currentBusStations.getBusStationsLat());
+            Collections.reverse(currentBusStations.getBusStationsLong());
+            Collections.reverse(currentBusStations.getBusStationsNames());
+        }
+        String stationsNames = "";
+        for(String busName : currentBusStations.getBusStationsNames()){
+            stationsNames += busName + " - ";
+        }
+        for(int i = 0; i < currentBusStations.getBusStationsLat().size(); i++){
+            geofenceList.add(new LatLng(currentBusStations.getBusStationsLat().get(i), currentBusStations.getBusStationsLong().get(i)));
+        }
+        txtStations.setText(stationsNames);
+        showMarkersAndZoom();
+        setBusStationsList();
+        LocationServices.GeofencingApi.addGeofences(
+                googleApiClient,
+                busStationsList,
+                getGeofencePendingIntent()
+        ).setResultCallback(this);
+    }
+
+
 }

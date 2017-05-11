@@ -40,7 +40,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
+        //Inflate layout views
         editPlateNum = (EditText) findViewById(R.id.login_plate_num);
         editPassword = (EditText) findViewById(R.id.login_password);
         btnLogin = (Button) findViewById(R.id.login_btn);
@@ -57,12 +57,13 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        //Intialize firebase
         mAuth = FirebaseAuth.getInstance();
 
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //startActivity(new Intent(LoginActivity.this, MainActivity.class));
+
                 doLogin();
             }
         });
@@ -70,48 +71,60 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void doLogin(){
+        /* this method is called when uer presses btn login
+         * it checks if user enter the email and password
+          * if not show message to ask user to enter them
+          * if yes authenticate  firebase and if successful shows the map
+          * if not show message that authentication fail */
         if(editPlateNum.getText().toString() == null || editPlateNum.getText().toString().isEmpty() ||
                 editPassword.getText().toString() == null || editPassword.getText().toString().isEmpty()){
-            Toast.makeText(LoginActivity.this, "من فضلك تأكد من إدخال الإيميل وكلمة المرور", Toast.LENGTH_SHORT).show();
+            Toast.makeText(LoginActivity.this, "please, enter email and password", Toast.LENGTH_SHORT).show();
         }else {
             mAuth.signInWithEmailAndPassword(editPlateNum.getText().toString(), editPassword.getText().toString())
                     .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
                         @Override
                         public void onComplete(@NonNull Task<AuthResult> task) {
                             if (task.isSuccessful()) {
-                                FirebaseUser user = mAuth.getCurrentUser();
-                                /*FirebaseDatabase database = FirebaseDatabase.getInstance();
-                                DatabaseReference busStationsReference = database.getReference("buses_Info");
+                                startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                                LoginActivity.this.finish();
+                            } else {
+                                Toast.makeText(LoginActivity.this, "Auth Failed", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+        }
+    }
+
+    private void addBusTodatabase(){
+        /* use this method to add bus info and bus stations locations to database
+         * should be removed in presentation */
+        FirebaseUser user = mAuth.getCurrentUser();
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+                                /*DatabaseReference busStationsReference = database.getReference("buses_Info");
                                 BusStation busStation = new BusStation();
-                                busStation.setNumOfBusStations(6);
+                                busStation.setNumOfBusStations(4);
                                 List<String> busIDs = new ArrayList<String>();
                                 busIDs.add(user.getUid());
                                 busStation.setBusesIDs(busIDs);
                                 List<String> busStationsNames = new ArrayList<String>();
-                                busStationsNames.add("الأولى");
-                                busStationsNames.add("الثانية");
-                                busStationsNames.add("الثالثة");
-                                busStationsNames.add("الرابعة");
-                                busStationsNames.add("الخامسة");
-                                busStationsNames.add("السادسة");
+                                busStationsNames.add("العريش");
+                                busStationsNames.add("كايرو مول");
+                                busStationsNames.add("الطالبية ");
+                                busStationsNames.add("الجيزة");
                                 busStation.setBusStationsNames(busStationsNames);
                                 List<Double> busStationsLat = new ArrayList<Double>();
                                 List<Double> buStationsLong = new ArrayList<Double>();
-                                busStationsLat.add(29.959698);
-                                buStationsLong.add(31.103493);
-                                busStationsLat.add(29.958564);
-                                buStationsLong.add(31.103622);
-                                busStationsLat.add(29.958434);
-                                buStationsLong.add(31.104781);
-                                busStationsLat.add(29.958229);
-                                buStationsLong.add(31.106519);
-                                busStationsLat.add(29.959205);
-                                buStationsLong.add(31.106959);
-                                busStationsLat.add(29.959484);
-                                buStationsLong.add(31.104963);
+                                busStationsLat.add(29.993755);
+                                buStationsLong.add(31.160263);
+                                busStationsLat.add(29.998824);
+                                buStationsLong.add(31.173492);
+                                busStationsLat.add(30.001732);
+                                buStationsLong.add(31.181195);
+                                busStationsLat.add(30.015417);
+                                buStationsLong.add(31.212062);
                                 busStation.setBusStationsLat(busStationsLat);
                                 busStation.setBusStationsLong(buStationsLong);
-                                busStationsReference.child("122").setValue(busStation);
+                                busStationsReference.child("300").setValue(busStation);
                                 GeoFire geoFire = new GeoFire(busStationsReference);*/
                                     /*geoFire.setLocation("first_Station", );
                                     geoFire.setLocation("second_Station", );
@@ -119,13 +132,5 @@ public class LoginActivity extends AppCompatActivity {
                                     geoFire.setLocation("fourth_Station", );
                                     geoFire.setLocation("fifth_Station", );
                                     geoFire.setLocation("sixth_Station", );*/
-
-                                startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                            } else {
-                                Toast.makeText(LoginActivity.this, "Auth Failed", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-        }
     }
 }

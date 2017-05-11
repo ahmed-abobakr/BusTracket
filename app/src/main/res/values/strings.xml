@@ -4,4 +4,6 @@
     <string name="password">Password</string>
     <string name="login">Login</string>
     <string name="google_maps_key">AIzaSyCmUgbZDs5h5bxj06phijxH3LnkGXEV8t8</string>
+    <string name="start_trip">Start Trip</string>
+    <string name="end_trip">End Trip</string>
 </resources>

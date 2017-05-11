@@ -23,63 +23,57 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true"
-            android:text="المحطة التالية:"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:text="Next Station:"
             android:id="@+id/map_lbl_next_station"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_toLeftOf="@id/map_lbl_next_station"
-            android:layout_marginEnd="5dp"
-            android:layout_marginRight="5dp"
-            android:text="غمرة"
+            android:layout_toRightOf="@id/map_lbl_next_station"
+            android:layout_marginStart="5dp"
+            android:layout_marginLeft="5dp"
             android:id="@+id/map_next_station"/>
 
+
+
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
             android:layout_marginTop="5dp"
             android:layout_below="@id/map_lbl_next_station"
-            android:text="الوقت المتوقع للوصل للمحطة:"
-            android:id="@+id/map_lbl_estimated_time"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/map_next_station"
-            android:layout_toLeftOf="@id/map_lbl_estimated_time"
-            android:layout_marginRight="5dp"
-            android:layout_marginEnd="5dp"
-            android:layout_marginTop="5dp"
-            android:text="١٠ دقائق"
-            android:id="@+id/map_estimated_time"/>
-
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="5dp"
-            android:layout_below="@id/map_lbl_estimated_time"
-            android:text="المحطات:"
+            android:text="Stations:"
             android:id="@+id/map_lbl_stations"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/map_estimated_time"
-            android:layout_toLeftOf="@id/map_lbl_stations"
-            android:layout_marginRight="5dp"
-            android:layout_marginEnd="5dp"
+            android:layout_below="@id/map_next_station"
+            android:layout_toRightOf="@id/map_lbl_stations"
+            android:layout_marginLeft="5dp"
+            android:layout_marginStart="5dp"
             android:layout_marginTop="5dp"
             android:id="@+id/map_stations"/>
 
         </RelativeLayout>
+
+
+    <Button
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_start_trip"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="15dp"
+        android:padding="10dp"
+        android:background="@color/colorPrimary"
+        android:textColor="#FFFFFF"
+        android:text="@string/start_trip"
+        android:visibility="gone"/>
 
 
 </RelativeLayout>

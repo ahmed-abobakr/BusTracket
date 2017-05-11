@@ -11,6 +11,7 @@ import com.google.firebase.FirebaseApp;
 public class BusTrackerApp extends Application {
 
     public static GeofenceListener listener;
+    public static StartTipDialog.OnStartedStationChoosen onStartedStationChoosen;
 
     @Override
     public void onCreate() {
